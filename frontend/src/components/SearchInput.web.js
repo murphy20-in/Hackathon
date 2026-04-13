@@ -12,11 +12,10 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
 import MyLocationRounded from '@mui/icons-material/MyLocationRounded';
 import PlaceRounded from '@mui/icons-material/PlaceRounded';
 import SwapHorizRounded from '@mui/icons-material/SwapHorizRounded';
-import TravelExploreRounded from '@mui/icons-material/TravelExploreRounded';
+import SearchRounded from '@mui/icons-material/SearchRounded';
 import { alpha, useTheme } from '@mui/material/styles';
 
 import { DEMO_LOCATIONS, DEMO_PRESETS } from '../theme/webTheme';
@@ -51,22 +50,16 @@ function renderField(theme, label, placeholder, value, onChange, icon, onSearch)
           sx={{
             '& .MuiOutlinedInput-root': {
               borderRadius: 2.5,
-              backgroundColor:
-                theme.palette.mode === 'dark'
-                  ? alpha('#020817', 0.42)
-                  : alpha('#FFFFFF', 0.88),
+              backgroundColor: alpha('#111111', 0.8),
               '& fieldset': {
-                borderColor:
-                  theme.palette.mode === 'dark'
-                    ? alpha('#93C5FD', 0.16)
-                    : alpha('#1E3A8A', 0.12),
+                borderColor: alpha('#FFFFFF', 0.1),
               },
               '&:hover fieldset': {
-                borderColor: alpha(theme.palette.primary.main, 0.32),
+                borderColor: alpha('#FF5500', 0.5),
               },
               '&.Mui-focused fieldset': {
-                borderColor: alpha(theme.palette.primary.main, 0.6),
-                boxShadow: `0 0 0 4px ${alpha(theme.palette.primary.main, 0.08)}`,
+                borderColor: '#FF5500',
+                boxShadow: `0 0 0 3px ${alpha('#FF5500', 0.15)}`,
               },
             },
           }}
@@ -94,11 +87,11 @@ export default function SearchInput({
         <Box sx={{ flex: 1 }}>
           {renderField(
             theme,
-            'Starting point',
-            'Search a neighborhood, landmark, or corridor',
+            'From',
+            'Enter starting point',
             source,
             onSourceChange,
-            <MyLocationRounded sx={{ color: theme.palette.secondary.main }} />,
+            <MyLocationRounded sx={{ color: '#FF5500', fontSize: 22 }} />,
             onSearch
           )}
         </Box>
@@ -107,11 +100,11 @@ export default function SearchInput({
           <Box sx={{ flex: 1 }}>
             {renderField(
               theme,
-              'Destination',
-              'Where should AI guide you?',
+              'To',
+              'Enter destination',
               destination,
               onDestinationChange,
-              <PlaceRounded sx={{ color: theme.palette.error.main }} />,
+              <PlaceRounded sx={{ color: '#EF4444', fontSize: 22 }} />,
               onSearch
             )}
           </Box>
@@ -120,20 +113,19 @@ export default function SearchInput({
             onClick={onSwap}
             sx={{
               alignSelf: 'center',
-              width: 52,
-              height: 52,
-              borderRadius: '18px',
-              border: `1px solid ${alpha(theme.palette.primary.main, 0.16)}`,
-              backgroundColor:
-                theme.palette.mode === 'dark'
-                  ? alpha('#020817', 0.5)
-                  : alpha('#FFFFFF', 0.76),
-              color: theme.palette.primary.main,
-              transition: 'transform 180ms ease, box-shadow 180ms ease',
+              width: 48,
+              height: 48,
+              borderRadius: '14px',
+              border: `1px solid ${alpha('#FFFFFF', 0.1)}`,
+              backgroundColor: alpha('#111111', 0.8),
+              color: '#999',
+              flexShrink: 0,
               '&:hover': {
-                transform: 'translateY(-1px)',
-                boxShadow: `0 14px 28px ${alpha(theme.palette.primary.main, 0.16)}`,
+                backgroundColor: alpha('#1A1A1A', 0.9),
+                color: '#fff',
+                transform: 'rotate(180deg)',
               },
+              transition: 'all 200ms ease',
             }}
           >
             <SwapHorizRounded />
@@ -143,63 +135,82 @@ export default function SearchInput({
             onClick={onSearch}
             disabled={loading}
             variant="contained"
-            startIcon={
-              loading ? <CircularProgress size={18} sx={{ color: '#FFFFFF' }} /> : <TravelExploreRounded />
-            }
+            startIcon={loading ? <CircularProgress size={18} sx={{ color: '#FFFFFF' }} /> : <SearchRounded />}
             sx={{
-              minWidth: { xs: '100%', xl: 220 },
+              minWidth: { xs: '100%', xl: 200 },
               alignSelf: 'stretch',
-              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #0F766E 100%)',
-              boxShadow: '0 18px 40px rgba(30, 58, 138, 0.32)',
+              background: 'linear-gradient(135deg, #CC4400 0%, #FF5500 100%)',
+              boxShadow: '0 4px 14px rgba(255, 85, 0, 0.35)',
+              fontWeight: 700,
+              fontSize: '0.95rem',
+              borderRadius: '14px',
+              textTransform: 'none',
               '&:hover': {
-                background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 50%, #115E59 100%)',
-                transform: 'translateY(-1px) scale(1.01)',
-                boxShadow: '0 22px 44px rgba(30, 58, 138, 0.36)',
+                background: 'linear-gradient(135deg, #FF5500 0%, #FF7733 100%)',
+                boxShadow: '0 6px 20px rgba(255, 85, 0, 0.45)',
+                transform: 'translateY(-1px)',
               },
-              transition: 'transform 180ms ease, box-shadow 180ms ease',
+              '&:disabled': {
+                background: alpha('#64748B', 0.6),
+              },
+              transition: 'all 200ms ease',
             }}
           >
-            {loading ? 'Running AI safety analysis…' : 'Find Safe Routes'}
+            {loading ? 'Analyzing...' : 'Find Routes'}
           </Button>
         </Stack>
       </Stack>
 
-      <Stack direction={{ xs: 'column', md: 'row' }} spacing={1.25} alignItems={{ md: 'center' }}>
-        <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
-          {DEMO_PRESETS.map((preset) => (
-            <Chip
-              key={preset.label}
-              label={preset.label}
-              icon={<AutoAwesomeRounded />}
-              onClick={() => {
-                onSourceChange(preset.source);
-                onDestinationChange(preset.destination);
-              }}
-              sx={{
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
-                backgroundColor:
-                  theme.palette.mode === 'dark'
-                    ? alpha('#0F172A', 0.72)
-                    : alpha('#FFFFFF', 0.72),
-              }}
-            />
-          ))}
-        </Stack>
-
-        <Typography variant="caption" sx={{ color: 'text.secondary', ml: { md: 'auto' } }}>
-          Autocomplete is tuned for Bangalore demo corridors and landmark-based searches.
+      <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center">
+        <Typography variant="caption" sx={{ color: 'text.secondary', mr: 1 }}>
+          Try:
         </Typography>
+        {DEMO_PRESETS.map((preset) => (
+          <Chip
+            key={preset.label}
+            label={preset.label}
+            onClick={() => {
+              onSourceChange(preset.source);
+              onDestinationChange(preset.destination);
+            }}
+            size="small"
+            sx={{
+              fontSize: '0.75rem',
+              height: 28,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+              backgroundColor: 'transparent',
+              color: theme.palette.primary.main,
+              '&:hover': {
+                backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                borderColor: theme.palette.primary.main,
+              },
+            }}
+          />
+        ))}
       </Stack>
 
       {statusMessage ? (
         <Alert
           severity={statusMessage.severity || 'info'}
           sx={{
-            borderRadius: 2.5,
-            backgroundColor:
-              theme.palette.mode === 'dark'
-                ? alpha('#08111F', 0.92)
-                : alpha('#FFFFFF', 0.9),
+            borderRadius: 2,
+            fontSize: '0.875rem',
+            backgroundColor: statusMessage.severity === 'success' 
+              ? alpha('#10B981', 0.1)
+              : statusMessage.severity === 'error'
+              ? alpha('#EF4444', 0.1)
+              : statusMessage.severity === 'warning'
+              ? alpha('#F59E0B', 0.1)
+              : alpha(theme.palette.primary.main, 0.1),
+            border: `1px solid ${
+              statusMessage.severity === 'success' 
+                ? alpha('#10B981', 0.3)
+                : statusMessage.severity === 'error'
+                ? alpha('#EF4444', 0.3)
+                : statusMessage.severity === 'warning'
+                ? alpha('#F59E0B', 0.3)
+                : alpha(theme.palette.primary.main, 0.2)
+            }`,
           }}
         >
           {statusMessage.text}

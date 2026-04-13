@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { getSafeRoute } from '../services/api';
+import { decodePolyline } from '../utils/polyline';
 
 /**
  * Hook for fetching and managing safe routes.
@@ -29,15 +30,23 @@ export function useRoutes() {
         allRoutes.push(...data.alternatives);
       }
 
+      // Pre-decode polyline coordinates so map/UI can use them directly
+      allRoutes.forEach((route) => {
+        if (route.polyline && !route.coordinates) {
+          route.coordinates = decodePolyline(route.polyline);
+        }
+      });
+
       setRoutes(allRoutes);
       setSelectedRoute(allRoutes[0] || null);
       setTimeContext(data.time_context || null);
       setTradeOffNote(data.trade_off_note || '');
 
-      return { routes: allRoutes, responseTime };
+      return { routes: allRoutes, responseTime, error: null };
     } catch (err) {
-      setError(err.message);
-      return { routes: [], responseTime: 0 };
+      const errorMsg = err.message || 'Failed to fetch routes';
+      setError(errorMsg);
+      return { routes: [], responseTime: 0, error: errorMsg };
     } finally {
       setLoading(false);
     }

@@ -1,119 +1,140 @@
-import React from 'react';
-import { Box, Chip, IconButton, Stack, Typography } from '@mui/material';
-import AutoAwesomeRounded from '@mui/icons-material/AutoAwesomeRounded';
-import BoltRounded from '@mui/icons-material/BoltRounded';
-import DarkModeRounded from '@mui/icons-material/DarkModeRounded';
-import LightModeRounded from '@mui/icons-material/LightModeRounded';
-import ShieldRounded from '@mui/icons-material/ShieldRounded';
-import { alpha, useTheme } from '@mui/material/styles';
+import React, { useEffect, useRef, useState } from 'react';
+import { Box, Stack, Typography } from '@mui/material';
+import { alpha } from '@mui/material/styles';
 
-import SearchInput from './SearchInput';
-import { glassPanel } from '../theme/webTheme';
+export default function Navbar({ onScrollToMap }) {
+  const [scrolled, setScrolled] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const navRef = useRef(null);
 
-export default function Navbar({
-  source,
-  destination,
-  onSourceChange,
-  onDestinationChange,
-  onSearch,
-  onSwap,
-  loading,
-  statusMessage,
-  themeMode,
-  onThemeModeChange,
-}) {
-  const theme = useTheme();
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // GSAP fade-in
+  useEffect(() => {
+    if (!window.gsap) return;
+    window.gsap.from('#main-navbar', { y: -40, opacity: 0, duration: 0.8, ease: 'power3.out' });
+  }, []);
+
+  // CTA hover bounce
+  useEffect(() => {
+    if (!window.gsap) return;
+    const cta = document.getElementById('nav-cta-btn');
+    if (!cta) return;
+    const enter = () => {
+      window.gsap.fromTo(cta, { scale: 1 }, { scale: 1.08, duration: 0.2, yoyo: true, repeat: 1, ease: 'power2.inOut' });
+    };
+    cta.addEventListener('mouseenter', enter);
+    return () => cta.removeEventListener('mouseenter', enter);
+  }, []);
 
   return (
     <Box
+      id="main-navbar"
+      ref={navRef}
       sx={{
-        position: 'relative',
-        zIndex: 10,
-        mb: { xs: 2.25, md: 2.75 },
-        borderRadius: 4,
-        p: { xs: 2.25, md: 3 },
-        overflow: 'hidden',
-        ...glassPanel(theme, 0.82),
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        zIndex: 50,
+        transition: 'all 0.5s ease',
+        background: scrolled ? alpha('#0A0A0A', 0.72) : 'transparent',
+        backdropFilter: scrolled ? 'blur(20px)' : 'none',
+        WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
       }}
     >
-      <Box
-        sx={{
-          position: 'absolute',
-          inset: 0,
-          background:
-            theme.palette.mode === 'dark'
-              ? 'radial-gradient(circle at top left, rgba(37,99,235,0.18), transparent 38%), radial-gradient(circle at right, rgba(45,212,191,0.16), transparent 32%)'
-              : 'radial-gradient(circle at top left, rgba(59,130,246,0.16), transparent 36%), radial-gradient(circle at right, rgba(20,184,166,0.16), transparent 28%)',
-          pointerEvents: 'none',
-        }}
-      />
+      <Box sx={{ maxWidth: 1280, mx: 'auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', px: { xs: 3, md: 5 }, py: 2.5 }}>
+        <Typography
+          component="a"
+          href="#hero"
+          sx={{
+            fontFamily: '"Bebas Neue", sans-serif',
+            fontSize: '1.5rem',
+            color: '#fff',
+            textDecoration: 'none',
+            letterSpacing: '0.04em',
+            fontWeight: 400,
+          }}
+        >
+          SafeRoute AI
+        </Typography>
 
-      <Stack spacing={3} sx={{ position: 'relative' }}>
-        <Stack direction={{ xs: 'column', lg: 'row' }} spacing={2.5} alignItems={{ lg: 'flex-start' }}>
-          <Stack spacing={1.25} sx={{ flex: 1 }}>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              <Chip label="Investor Demo UI" icon={<AutoAwesomeRounded />} color="primary" />
-              <Chip
-                label="5G Edge Aware"
-                icon={<BoltRounded />}
-                sx={{
-                  backgroundColor: alpha(theme.palette.secondary.main, 0.12),
-                  color: theme.palette.secondary.main,
-                }}
-              />
-              <Chip
-                label="AI Safety Scoring"
-                icon={<ShieldRounded />}
-                sx={{
-                  backgroundColor: alpha(theme.palette.primary.main, 0.12),
-                  color: theme.palette.primary.main,
-                }}
-              />
-            </Stack>
-
-            <Typography variant="h2">AI Safe Route Navigator</Typography>
-            <Typography variant="body1" sx={{ maxWidth: 760, color: 'text.secondary' }}>
-              Real-time safety-aware navigation using 5G + AI. Compare recommended corridors,
-              highlight risk hotspots, and demonstrate an end-to-end incident response flow.
-            </Typography>
-          </Stack>
-
-          <IconButton
-            onClick={() => onThemeModeChange(themeMode === 'dark' ? 'light' : 'dark')}
+        {/* Desktop links */}
+        <Stack direction="row" spacing={4} alignItems="center" sx={{ display: { xs: 'none', md: 'flex' } }}>
+          <Typography component="a" href="#hero" sx={{ color: '#999', fontSize: '0.85rem', textDecoration: 'none', '&:hover': { color: '#fff' }, transition: 'color 0.3s' }}>
+            Home
+          </Typography>
+          <Typography component="a" href="#map-section" sx={{ color: '#999', fontSize: '0.85rem', textDecoration: 'none', '&:hover': { color: '#fff' }, transition: 'color 0.3s' }}>
+            Map
+          </Typography>
+          <Typography component="a" href="#routes-section" sx={{ color: '#999', fontSize: '0.85rem', textDecoration: 'none', '&:hover': { color: '#fff' }, transition: 'color 0.3s' }}>
+            Routes
+          </Typography>
+          <Box
+            id="nav-cta-btn"
+            component="a"
+            href="#map-section"
+            onClick={(e) => {
+              e.preventDefault();
+              if (onScrollToMap) onScrollToMap();
+              else document.getElementById('map-section')?.scrollIntoView({ behavior: 'smooth' });
+            }}
             sx={{
-              alignSelf: { xs: 'flex-start', lg: 'center' },
-              width: 52,
-              height: 52,
-              borderRadius: '18px',
-              backgroundColor:
-                theme.palette.mode === 'dark'
-                  ? alpha('#0F172A', 0.82)
-                  : alpha('#FFFFFF', 0.74),
-              border: `1px solid ${alpha(theme.palette.primary.main, 0.14)}`,
-              color: theme.palette.primary.main,
-              '&:hover': {
-                backgroundColor:
-                  theme.palette.mode === 'dark'
-                    ? alpha('#111C32', 0.92)
-                    : alpha('#FFFFFF', 0.92),
-              },
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 1,
+              backgroundColor: '#FF5500',
+              color: '#fff',
+              fontSize: '0.85rem',
+              fontWeight: 600,
+              px: 3,
+              py: 1.2,
+              borderRadius: 999,
+              textDecoration: 'none',
+              transition: 'filter 0.3s',
+              '&:hover': { filter: 'brightness(1.1)' },
             }}
           >
-            {themeMode === 'dark' ? <LightModeRounded /> : <DarkModeRounded />}
-          </IconButton>
+            Find Routes <span style={{ fontSize: '0.75rem' }}>→</span>
+          </Box>
         </Stack>
 
-        <SearchInput
-          source={source}
-          destination={destination}
-          onSourceChange={onSourceChange}
-          onDestinationChange={onDestinationChange}
-          onSearch={onSearch}
-          onSwap={onSwap}
-          loading={loading}
-          statusMessage={statusMessage}
-        />
-      </Stack>
+        {/* Mobile hamburger */}
+        <Box
+          onClick={() => setMenuOpen(!menuOpen)}
+          sx={{
+            display: { xs: 'block', md: 'none' },
+            color: '#fff',
+            fontSize: '1.4rem',
+            cursor: 'pointer',
+          }}
+        >
+          <i className={`fa-solid fa-${menuOpen ? 'xmark' : 'bars'}`} />
+        </Box>
+      </Box>
+
+      {/* Mobile menu */}
+      {menuOpen && (
+        <Box sx={{ display: { md: 'none' }, px: 3, pb: 3, background: alpha('#0A0A0A', 0.95), backdropFilter: 'blur(20px)' }}>
+          <Stack spacing={2}>
+            <Typography component="a" href="#hero" onClick={() => setMenuOpen(false)} sx={{ color: '#999', fontSize: '0.9rem', textDecoration: 'none', '&:hover': { color: '#fff' } }}>Home</Typography>
+            <Typography component="a" href="#map-section" onClick={() => setMenuOpen(false)} sx={{ color: '#999', fontSize: '0.9rem', textDecoration: 'none', '&:hover': { color: '#fff' } }}>Map</Typography>
+            <Typography component="a" href="#routes-section" onClick={() => setMenuOpen(false)} sx={{ color: '#999', fontSize: '0.9rem', textDecoration: 'none', '&:hover': { color: '#fff' } }}>Routes</Typography>
+            <Box
+              component="a"
+              href="#map-section"
+              onClick={() => setMenuOpen(false)}
+              sx={{ backgroundColor: '#FF5500', color: '#fff', fontSize: '0.85rem', fontWeight: 600, px: 3, py: 1.2, borderRadius: 999, textDecoration: 'none', textAlign: 'center' }}
+            >
+              Find Routes →
+            </Box>
+          </Stack>
+        </Box>
+      )}
     </Box>
   );
 }

@@ -44,9 +44,9 @@ export function getRouteTone(score = 0) {
       label: 'High Risk',
       color: '#DC2626',
       accent: '#F87171',
-      border: 'rgba(220, 38, 38, 0.42)',
-      glow: 'rgba(220, 38, 38, 0.28)',
-      fill: 'linear-gradient(160deg, rgba(255,255,255,0.88) 0%, rgba(254,242,242,0.94) 100%)',
+      border: 'rgba(220, 38, 38, 0.5)',
+      glow: 'rgba(220, 38, 38, 0.35)',
+      fill: 'linear-gradient(160deg, rgba(220,38,38,0.12) 0%, rgba(30,10,10,0.92) 100%)',
     };
   }
 
@@ -56,9 +56,9 @@ export function getRouteTone(score = 0) {
       label: 'Caution',
       color: '#D97706',
       accent: '#FBBF24',
-      border: 'rgba(217, 119, 6, 0.36)',
-      glow: 'rgba(245, 158, 11, 0.24)',
-      fill: 'linear-gradient(160deg, rgba(255,255,255,0.88) 0%, rgba(255,251,235,0.94) 100%)',
+      border: 'rgba(217, 119, 6, 0.45)',
+      glow: 'rgba(245, 158, 11, 0.3)',
+      fill: 'linear-gradient(160deg, rgba(217,119,6,0.1) 0%, rgba(30,20,5,0.92) 100%)',
     };
   }
 
@@ -67,9 +67,9 @@ export function getRouteTone(score = 0) {
     label: 'Safest',
     color: '#0F766E',
     accent: '#2DD4BF',
-    border: 'rgba(15, 118, 110, 0.34)',
-    glow: 'rgba(20, 184, 166, 0.24)',
-    fill: 'linear-gradient(160deg, rgba(255,255,255,0.88) 0%, rgba(240,253,250,0.94) 100%)',
+    border: 'rgba(15, 118, 110, 0.45)',
+    glow: 'rgba(20, 184, 166, 0.3)',
+    fill: 'linear-gradient(160deg, rgba(15,118,110,0.1) 0%, rgba(5,30,28,0.92) 100%)',
   };
 }
 
@@ -77,35 +77,24 @@ export function glassPanel(theme, opacity = 0.8) {
   return {
     backdropFilter: 'blur(22px)',
     WebkitBackdropFilter: 'blur(22px)',
-    background:
-      theme.palette.mode === 'dark'
-        ? `linear-gradient(145deg, ${alpha('#0B1220', 0.94)} 0%, ${alpha('#111C32', opacity)} 100%)`
-        : `linear-gradient(145deg, ${alpha('#FFFFFF', 0.86)} 0%, ${alpha('#EFF6FF', opacity)} 100%)`,
-    border:
-      theme.palette.mode === 'dark'
-        ? `1px solid ${alpha('#93C5FD', 0.12)}`
-        : `1px solid ${alpha('#FFFFFF', 0.72)}`,
-    boxShadow:
-      theme.palette.mode === 'dark'
-        ? '0 28px 80px rgba(2, 6, 23, 0.55)'
-        : '0 28px 80px rgba(30, 58, 138, 0.16)',
+    background: `linear-gradient(145deg, ${alpha('#111111', 0.94)} 0%, ${alpha('#1A1A1A', opacity)} 100%)`,
+    border: `1px solid ${alpha('#FF5500', 0.1)}`,
+    boxShadow: '0 28px 80px rgba(0, 0, 0, 0.55)',
   };
 }
 
-export function createAppTheme(mode = 'light') {
-  const isDark = mode === 'dark';
-
+export function createAppTheme() {
   return createTheme({
     spacing: 8,
     shape: {
       borderRadius: 24,
     },
     palette: {
-      mode,
+      mode: 'dark',
       primary: {
-        main: '#1E3A8A',
-        light: '#3B82F6',
-        dark: '#172554',
+        main: '#FF5500',
+        light: '#FF7733',
+        dark: '#CC4400',
         contrastText: '#FFFFFF',
       },
       secondary: {
@@ -123,35 +112,35 @@ export function createAppTheme(mode = 'light') {
         main: '#DC2626',
       },
       background: {
-        default: isDark ? '#020817' : '#EAF2FF',
-        paper: isDark ? '#08111F' : '#F8FBFF',
+        default: '#0A0A0A',
+        paper: '#111111',
       },
       text: {
-        primary: isDark ? '#E5EEF8' : '#102247',
-        secondary: isDark ? '#93A8C9' : '#5F7298',
+        primary: '#FFFFFF',
+        secondary: '#999999',
       },
-      divider: isDark ? alpha('#94A3B8', 0.12) : alpha('#1E3A8A', 0.08),
+      divider: alpha('#FFFFFF', 0.08),
     },
     typography: {
-      fontFamily: '"Space Grotesk", "DM Sans", "Trebuchet MS", sans-serif',
+      fontFamily: '"DM Sans", "Segoe UI", sans-serif',
       h1: {
-        fontFamily: '"Space Grotesk", "DM Sans", sans-serif',
+        fontFamily: '"Bebas Neue", "DM Sans", sans-serif',
         fontSize: 'clamp(2.5rem, 5vw, 4.4rem)',
-        fontWeight: 700,
+        fontWeight: 400,
         lineHeight: 0.96,
-        letterSpacing: '-0.06em',
+        letterSpacing: '0.02em',
       },
       h2: {
-        fontFamily: '"Space Grotesk", "DM Sans", sans-serif',
+        fontFamily: '"Bebas Neue", "DM Sans", sans-serif',
         fontSize: 'clamp(1.65rem, 3vw, 2.6rem)',
-        fontWeight: 700,
+        fontWeight: 400,
         lineHeight: 1.04,
-        letterSpacing: '-0.04em',
+        letterSpacing: '0.01em',
       },
       h3: {
-        fontFamily: '"Space Grotesk", "DM Sans", sans-serif',
+        fontFamily: '"Bebas Neue", "DM Sans", sans-serif',
         fontSize: 'clamp(1.25rem, 2vw, 1.8rem)',
-        fontWeight: 700,
+        fontWeight: 400,
         lineHeight: 1.1,
       },
       subtitle1: {
@@ -170,7 +159,7 @@ export function createAppTheme(mode = 'light') {
         lineHeight: 1.65,
       },
       button: {
-        fontFamily: '"Space Grotesk", "DM Sans", sans-serif',
+        fontFamily: '"DM Sans", sans-serif',
         fontWeight: 700,
         letterSpacing: '0.02em',
         textTransform: 'none',

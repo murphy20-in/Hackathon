@@ -7,7 +7,7 @@ load_dotenv(os.path.join(os.path.dirname(__file__), "..", "..", ".env"))
 
 
 class Settings(BaseSettings):
-    DATABASE_URL: str = "sqlite:///./saferoute.db"
+    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/saferoute"
     GOOGLE_MAPS_API_KEY: str = ""
     ROUTING_PROVIDER: str = "osrm"  # "google" or "osrm"
     OSRM_BASE_URL: str = "http://router.project-osrm.org"

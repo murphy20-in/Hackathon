@@ -25,11 +25,8 @@ function EmptyStateCard({ icon, title, text }) {
         minWidth: 220,
         p: 2.2,
         borderRadius: 3,
-        backgroundColor:
-          theme.palette.mode === 'dark'
-            ? alpha('#020817', 0.42)
-            : alpha('#FFFFFF', 0.66),
-        border: `1px solid ${alpha(theme.palette.primary.main, 0.08)}`,
+        backgroundColor: alpha('#FFFFFF', 0.03),
+        border: `1px solid ${alpha('#FFFFFF', 0.06)}`,
       }}
     >
       <Stack spacing={1.2}>
@@ -153,10 +150,7 @@ export default function RouteDetailsPanel({
                   sx={{
                     p: 2,
                     borderRadius: 4,
-                    backgroundColor:
-                      theme.palette.mode === 'dark'
-                        ? alpha('#020817', 0.5)
-                        : alpha('#FFFFFF', 0.7),
+                    backgroundColor: alpha('#111111', 0.7),
                   }}
                 >
                   <Skeleton variant="text" width="55%" height={42} />

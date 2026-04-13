@@ -82,9 +82,9 @@ export default function SOSButton({ onTrigger, disabled }) {
             height: 76,
             background: 'linear-gradient(135deg, #991B1B 0%, #DC2626 56%, #FB7185 100%)',
             color: '#FFFFFF',
-            boxShadow: `0 0 0 10px ${alpha(theme.palette.error.main, 0.1)}, 0 24px 46px ${alpha(
-              theme.palette.error.main,
-              0.32
+            boxShadow: `0 0 0 10px ${alpha('#DC2626', 0.15)}, 0 24px 46px ${alpha(
+              '#DC2626',
+              0.4
             )}`,
             transform: progress > 0 ? 'scale(0.97)' : 'scale(1)',
             transition: 'transform 180ms ease, box-shadow 180ms ease',

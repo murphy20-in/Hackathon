@@ -70,16 +70,23 @@ export default function RouteCard({ route, isSelected, onSelect }) {
         p: 2.5,
         borderRadius: 4,
         cursor: 'pointer',
-        background: tone.fill,
-        border: `1px solid ${isSelected ? tone.border : alpha(theme.palette.primary.main, 0.08)}`,
+        background: isSelected
+          ? 'linear-gradient(160deg, rgba(255,107,53,0.12) 0%, rgba(20,15,10,0.95) 100%)'
+          : tone.fill,
+        border: isSelected
+          ? '2px solid #FF6B35'
+          : `1px solid ${alpha('#FFFFFF', 0.06)}`,
         boxShadow: isSelected
-          ? `0 28px 56px ${tone.glow}`
-          : '0 16px 36px rgba(15, 23, 42, 0.08)',
-        transform: isSelected ? 'translateY(-8px)' : 'translateY(0)',
-        transition: 'transform 220ms ease, box-shadow 220ms ease, border-color 220ms ease',
+          ? '0 0 0 4px rgba(255,107,53,0.15), 0 28px 56px rgba(255,85,0,0.2)'
+          : '0 16px 36px rgba(0, 0, 0, 0.3)',
+        transform: isSelected ? 'translateY(-8px) scale(1.02)' : 'translateY(0)',
+        transition: 'all 280ms ease',
         '&:hover': {
-          transform: 'translateY(-10px) scale(1.01)',
-          boxShadow: `0 30px 60px ${tone.glow}`,
+          transform: isSelected ? 'translateY(-10px) scale(1.03)' : 'translateY(-6px) scale(1.01)',
+          boxShadow: isSelected
+            ? '0 0 0 4px rgba(255,107,53,0.2), 0 32px 64px rgba(255,85,0,0.25)'
+            : `0 30px 60px ${tone.glow}`,
+          borderColor: isSelected ? '#FF6B35' : alpha('#FF5500', 0.3),
         },
       }}
     >
@@ -135,10 +142,7 @@ export default function RouteCard({ route, isSelected, onSelect }) {
           sx={{
             p: 2,
             borderRadius: 3,
-            backgroundColor:
-              theme.palette.mode === 'dark'
-                ? alpha('#020817', 0.42)
-                : alpha('#FFFFFF', 0.58),
+            backgroundColor: alpha('#111111', 0.5),
           }}
         >
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.1 }}>

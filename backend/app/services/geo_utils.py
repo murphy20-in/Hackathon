@@ -100,7 +100,7 @@ def get_crimes_near_point(
     # ~0.009 degrees latitude ≈ 1km
     deg_offset = radius_meters / 111000.0 * 1.2  # 20% buffer
 
-    # SQLite-compatible query (no ::numeric casting)
+    # PostgreSQL-compatible query with ::numeric casting
     query = text("""
         SELECT crime_type, timestamp, distance_meters FROM (
             SELECT crime_type, timestamp,
@@ -142,11 +142,11 @@ def get_aggregated_crime_zones(db: Session) -> list[dict]:
     Returns:
         List of dicts with lat, lng, crime_count, weighted_score, risk_level
     """
-    # SQLite-compatible query (ROUND works differently in SQLite)
+    # PostgreSQL-compatible query with ::numeric casting
     query = text("""
         SELECT
-            ROUND(latitude, 3) as lat,
-            ROUND(longitude, 3) as lng,
+            ROUND(latitude::numeric, 3) as lat,
+            ROUND(longitude::numeric, 3) as lng,
             COUNT(*) as crime_count,
             SUM(CASE
                 WHEN crime_type IN ('molestation', 'rape', 'eve_teasing', 'sexual_harassment',
@@ -158,7 +158,7 @@ def get_aggregated_crime_zones(db: Session) -> list[dict]:
                 ELSE 0.3
             END) as weighted_score
         FROM crime_incidents
-        GROUP BY ROUND(latitude, 3), ROUND(longitude, 3)
+        GROUP BY ROUND(latitude::numeric, 3), ROUND(longitude::numeric, 3)
         HAVING COUNT(*) >= 3
         ORDER BY weighted_score DESC
     """)

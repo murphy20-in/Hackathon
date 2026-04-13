@@ -13,10 +13,7 @@ function MetricTile({ icon, label, value, accent }) {
       sx={{
         p: 1.6,
         borderRadius: 2.5,
-        backgroundColor:
-          theme.palette.mode === 'dark'
-            ? alpha('#020817', 0.48)
-            : alpha('#FFFFFF', 0.68),
+        backgroundColor: alpha('#111111', 0.6),
         border: `1px solid ${alpha(accent, 0.16)}`,
       }}
     >

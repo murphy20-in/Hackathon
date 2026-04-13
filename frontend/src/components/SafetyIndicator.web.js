@@ -16,10 +16,7 @@ export default function SafetyIndicator({ safetyScore = 0, riskScore = 0 }) {
       sx={{
         p: 2,
         borderRadius: 3,
-        backgroundColor:
-          theme.palette.mode === 'dark'
-            ? alpha('#020817', 0.42)
-            : alpha('#FFFFFF', 0.62),
+        backgroundColor: alpha('#111111', 0.6),
         border: `1px solid ${alpha(tone.color, 0.16)}`,
       }}
     >
@@ -58,10 +55,7 @@ export default function SafetyIndicator({ safetyScore = 0, riskScore = 0 }) {
           label={`Risk ${Number(riskScore || 0).toFixed(0)}`}
           sx={{
             color: theme.palette.text.primary,
-            backgroundColor:
-              theme.palette.mode === 'dark'
-                ? alpha('#0F172A', 0.82)
-                : alpha('#FFFFFF', 0.78),
+            backgroundColor: alpha('#111111', 0.82),
           }}
         />
       </Stack>

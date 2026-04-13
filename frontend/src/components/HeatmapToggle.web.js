@@ -18,16 +18,12 @@ export default function HeatmapToggle({ isActive, onToggle, loading }) {
         color: isActive ? '#FFFFFF' : theme.palette.text.primary,
         background: isActive
           ? 'linear-gradient(135deg, #DC2626 0%, #FB7185 100%)'
-          : theme.palette.mode === 'dark'
-            ? alpha('#0F172A', 0.76)
-            : alpha('#FFFFFF', 0.74),
+          : alpha('#111111', 0.76),
         '&:hover': {
           borderColor: alpha(theme.palette.error.main, 0.38),
           background: isActive
             ? 'linear-gradient(135deg, #B91C1C 0%, #F43F5E 100%)'
-            : theme.palette.mode === 'dark'
-              ? alpha('#111C32', 0.9)
-              : alpha('#FFFFFF', 0.92),
+            : alpha('#1A1A1A', 0.9),
         },
       }}
     >

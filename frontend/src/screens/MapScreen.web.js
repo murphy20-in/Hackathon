@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   Box,
   Chip,
@@ -8,12 +8,9 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import ExploreRounded from '@mui/icons-material/ExploreRounded';
-import MapRounded from '@mui/icons-material/MapRounded';
-import ShieldRounded from '@mui/icons-material/ShieldRounded';
 import { alpha, useTheme } from '@mui/material/styles';
 
-import Navbar from '../components/Navbar';
+import SearchInput from '../components/SearchInput';
 import FloatingControls from '../components/FloatingControls';
 import MapCanvas from '../components/MapCanvas';
 import SOSButton from '../components/SOSButton';
@@ -81,16 +78,11 @@ function loadLeaflet() {
   });
 }
 
-const TILESETS = {
-  light: {
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: '&copy; OpenStreetMap contributors',
-  },
-  dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
-    attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-    subdomains: 'abcd',
-  },
+// Fix 6 — Use stable tile URL without {s} subdomain placeholder
+const TILE_CONFIG = {
+  url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+  darkUrl: 'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
 };
 
 function hexToRgba(hex, opacity) {
@@ -115,13 +107,14 @@ function createMarkerIcon(kind) {
   });
 }
 
-export default function MapScreen({ navigation, themeMode = 'light', onThemeModeChange }) {
+export default function MapScreen({ navigation, themeMode = 'dark' }) {
   const theme = useTheme();
   const [source, setSource] = useState('Koramangala, Bangalore');
   const [destination, setDestination] = useState('MG Road, Bangalore');
   const [statusMessage, setStatusMessage] = useState(null);
 
   const mapContainerRef = useRef(null);
+  const mapSectionRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const tileLayerRef = useRef(null);
   const routeGlowRef = useRef(null);
@@ -129,6 +122,11 @@ export default function MapScreen({ navigation, themeMode = 'light', onThemeMode
   const heatmapLayersRef = useRef(null);
   const markerLayersRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
+
+  // Fix 1 — Map expansion state
+  const [mapExpanded, setMapExpanded] = useState(false);
+  // Fix 5 — Fullscreen state
+  const [mapFullscreen, setMapFullscreen] = useState(false);
 
   const {
     routes, selectedRoute, setSelectedRoute,
@@ -145,29 +143,101 @@ export default function MapScreen({ navigation, themeMode = 'light', onThemeMode
   const [responseTime, setResponseTime] = useState(0);
   const [sosActive, setSosActive] = useState(false);
 
+  // Fix 1 — Auto-expand map when routes are generated
+  useEffect(() => {
+    if (routes && routes.length > 0) {
+      setMapExpanded(true);
+    }
+  }, [routes]);
+
+  // Invalidate map size when expanding/fullscreening (critical for Leaflet)
+  useEffect(() => {
+    if (mapInstanceRef.current) {
+      setTimeout(() => {
+        mapInstanceRef.current.invalidateSize();
+      }, 450); // wait for CSS transition
+    }
+  }, [mapExpanded, mapFullscreen]);
+
+  // Fix 5 — Fullscreen toggle handler
+  const handleFullscreenToggle = useCallback(() => {
+    setMapFullscreen(prev => {
+      const next = !prev;
+      // Invalidate size after transition
+      setTimeout(() => {
+        if (mapInstanceRef.current) {
+          mapInstanceRef.current.invalidateSize();
+        }
+      }, 450);
+      return next;
+    });
+  }, []);
+
+  // ESC key to exit fullscreen
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === 'Escape' && mapFullscreen) {
+        setMapFullscreen(false);
+        setTimeout(() => mapInstanceRef.current?.invalidateSize(), 450);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [mapFullscreen]);
+
+  // ── GSAP ScrollTrigger for map section ──
+  useEffect(() => {
+    if (!window.gsap || !window.ScrollTrigger) return;
+    const gsap = window.gsap;
+
+    gsap.from('#map-section', {
+      scrollTrigger: {
+        trigger: '#map-section',
+        start: 'top 80%',
+        toggleActions: 'play none none none',
+      },
+      y: 60,
+      opacity: 0,
+      duration: 0.9,
+      ease: 'power3.out',
+    });
+
+    gsap.from('#routes-section', {
+      scrollTrigger: {
+        trigger: '#routes-section',
+        start: 'top 80%',
+        toggleActions: 'play none none none',
+      },
+      y: 60,
+      opacity: 0,
+      duration: 0.9,
+      ease: 'power3.out',
+    });
+  }, []);
+
+  // ── Leaflet initialisation ──
   useEffect(() => {
     let cancelled = false;
     let resizeObserver = null;
 
     loadLeaflet().then((L) => {
       if (cancelled || !mapContainerRef.current) return;
-      if (mapInstanceRef.current) return; // Strict singleton check
+      if (mapInstanceRef.current) return;
 
       const map = L.map(mapContainerRef.current, {
         zoomControl: false,
         preferCanvas: true,
-        scrollWheelZoom: false, // Disabled: causes scroll conflicts (crash on :0:0)
-        tap: false, // Fix for mobile/touch interaction on web
+        scrollWheelZoom: true,  // Enable scroll zoom for better UX
+        tap: false,
         dragging: true,
         zoomSnap: 0.25,
         wheelDebounceTime: 50,
       }).setView([BANGALORE_CENTER.latitude, BANGALORE_CENTER.longitude], 13);
 
-      const tileConfig = TILESETS[themeMode] || TILESETS.light;
-      tileLayerRef.current = L.tileLayer(tileConfig.url, {
-        attribution: tileConfig.attribution,
-        maxZoom: 20,
-        subdomains: tileConfig.subdomains,
+      // Fix 6 — Stable tile layer URL
+      tileLayerRef.current = L.tileLayer(TILE_CONFIG.darkUrl, {
+        attribution: TILE_CONFIG.attribution,
+        maxZoom: 19,
         crossOrigin: true,
       }).addTo(map);
 
@@ -177,7 +247,6 @@ export default function MapScreen({ navigation, themeMode = 'light', onThemeMode
       markerLayersRef.current = L.layerGroup().addTo(map);
       mapInstanceRef.current = map;
 
-      // Handle dynamic layout shifts (scroll/panel expansion) with debounce
       let resizeTimeout = null;
       resizeObserver = new ResizeObserver(() => {
         clearTimeout(resizeTimeout);
@@ -201,29 +270,10 @@ export default function MapScreen({ navigation, themeMode = 'light', onThemeMode
     return () => {
       cancelled = true;
       if (resizeObserver) resizeObserver.disconnect();
-      // NOTE: We do NOT remove the map instance here in dev mode to prevent 
-      // the "Script error" during HMR, but we clear it on real unmount if needed.
     };
   }, []);
 
-  useEffect(() => {
-    if (!mapReady || !window.L || !mapInstanceRef.current) return;
-
-    const L = window.L;
-    const map = mapInstanceRef.current;
-    const tileConfig = TILESETS[themeMode] || TILESETS.light;
-
-    if (tileLayerRef.current) {
-      map.removeLayer(tileLayerRef.current);
-    }
-
-    tileLayerRef.current = L.tileLayer(tileConfig.url, {
-      attribution: tileConfig.attribution,
-      maxZoom: 20,
-      subdomains: tileConfig.subdomains,
-    }).addTo(map);
-  }, [themeMode, mapReady]);
-
+  // ── Route polyline rendering (Fix 3 + Fix 4) ──
   useEffect(() => {
     if (!mapReady) return;
     const L = window.L;
@@ -238,49 +288,69 @@ export default function MapScreen({ navigation, themeMode = 'light', onThemeMode
 
     if (routes.length === 0) return;
 
-    const bounds = L.latLngBounds();
+    // Fix 4 — Draw ALL routes dimmed first, then selected bright on top
     const sorted = [...routes].sort((a, b) => {
       const aS = selectedRoute?.route_id === a.route_id ? 1 : 0;
       const bS = selectedRoute?.route_id === b.route_id ? 1 : 0;
       return aS - bS;
     });
 
+    let selectedBounds = null;
+    let allBounds = L.latLngBounds();
+
     sorted.forEach((route) => {
       const isSelected = selectedRoute?.route_id === route.route_id;
       const tone = getRouteTone(route.risk_score);
-      const coords = decodePolyline(route.polyline);
+      const coords = route.coordinates || decodePolyline(route.polyline);
       const latlngs = coords.map((coord) => [coord.latitude, coord.longitude]);
 
       if (latlngs.length === 0) return;
 
+      // Extend allBounds for initial fitBounds
+      latlngs.forEach((ll) => {
+        if (ll && ll[0] && ll[1]) allBounds.extend(ll);
+      });
+
       if (isSelected) {
+        selectedBounds = L.latLngBounds();
+        latlngs.forEach((ll) => {
+          if (ll && ll[0] && ll[1]) selectedBounds.extend(ll);
+        });
+
+        // Glow layer for selected route
         glowGroup.addLayer(
           L.polyline(latlngs, {
-            color: tone.color,
-            weight: 18,
-            opacity: themeMode === 'dark' ? 0.2 : 0.16,
+            color: '#FF5500',
+            weight: 20,
+            opacity: 0.2,
             lineCap: 'round',
             lineJoin: 'round',
           })
         );
       }
 
+      // Fix 4 — dimmed lines for non-selected, bright orange for selected
       const line = L.polyline(latlngs, {
-        color: isSelected ? tone.color : hexToRgba(tone.color, 0.42),
-        weight: isSelected ? 6 : 4,
-        opacity: isSelected ? 1 : 0.72,
-        dashArray: isSelected ? null : '12 10',
+        color: isSelected ? '#FF6B35' : '#888888',
+        weight: isSelected ? 6 : 3,
+        opacity: isSelected ? 1 : 0.4,
+        dashArray: isSelected ? null : '8 6',
         lineCap: 'round',
         lineJoin: 'round',
       });
 
-      line.on('click', () => setSelectedRoute(route));
-
-      routeGroup.addLayer(line);
-      latlngs.forEach((ll) => {
-        if (ll && ll[0] && ll[1]) bounds.extend(ll);
+      // Clicking a polyline on the map selects that route
+      line.on('click', () => {
+        setSelectedRoute(route);
+        // Scroll map into view
+        if (mapSectionRef.current) {
+          mapSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
       });
 
+      routeGroup.addLayer(line);
+
+      // Only add markers for selected route
       if (isSelected) {
         if (route.start_location?.lat && route.start_location?.lng) {
           L.marker([route.start_location.lat, route.start_location.lng], { icon: createMarkerIcon('start') })
@@ -295,11 +365,18 @@ export default function MapScreen({ navigation, themeMode = 'light', onThemeMode
       }
     });
 
-    if (bounds.isValid() && mapInstanceRef.current) {
-      mapInstanceRef.current.fitBounds(bounds, { padding: [120, 180] });
+    // Fix 3 — Fit bounds to selected route, or all routes if none selected
+    const boundsToFit = (selectedBounds && selectedBounds.isValid()) ? selectedBounds : allBounds;
+    if (boundsToFit && boundsToFit.isValid() && mapInstanceRef.current) {
+      mapInstanceRef.current.fitBounds(boundsToFit, {
+        padding: [60, 60],
+        animate: true,
+        duration: 0.5,
+      });
     }
-  }, [routes, selectedRoute, mapReady, themeMode]);
+  }, [routes, selectedRoute, mapReady]);
 
+  // ── Heatmap rendering ──
   useEffect(() => {
     if (!mapReady) return;
     const L = window.L;
@@ -368,20 +445,25 @@ export default function MapScreen({ navigation, themeMode = 'light', onThemeMode
       return;
     }
 
+    setStatusMessage({
+      severity: 'info',
+      text: 'Finding safest routes...',
+    });
+
     const startedAt = Date.now();
     const result = await fetchRoutes(source, destination, null, networkMode);
     const elapsed = Date.now() - startedAt;
     setResponseTime(elapsed);
 
-    if (result.routes.length > 0) {
+    if (result.routes && result.routes.length > 0) {
       setStatusMessage({
         severity: 'success',
-        text: `Analyzed ${result.routes.length} routes. Safety model responded in ${elapsed}ms.`,
+        text: `Found ${result.routes.length} routes in ${elapsed}ms. Safety score: ${result.routes[0]?.risk_score || 'N/A'}`,
       });
     } else {
       setStatusMessage({
         severity: 'error',
-        text: error || 'No routes were returned. Check the backend or try a different pair of landmarks.',
+        text: result.error || 'No routes found. Try different locations or check backend.',
       });
     }
   };
@@ -423,9 +505,14 @@ export default function MapScreen({ navigation, themeMode = 'light', onThemeMode
     }
   };
 
-  const handleRouteSelect = (route) => {
+  // Fix 2 — Route select handler with scroll-to-map
+  const handleRouteSelect = useCallback((route) => {
     setSelectedRoute(route);
-  };
+    // Scroll map section into view on mobile
+    if (mapSectionRef.current) {
+      mapSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [setSelectedRoute]);
 
   const handleSwap = () => {
     setSource(destination);
@@ -433,153 +520,253 @@ export default function MapScreen({ navigation, themeMode = 'light', onThemeMode
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        width: '100%',
-        position: 'relative',
-        overflow: 'visible',
-        background:
-          theme.palette.mode === 'dark'
-            ? 'radial-gradient(circle at top, rgba(30,58,138,0.24) 0%, rgba(2,6,23,0.96) 55%)'
-            : 'linear-gradient(180deg, rgba(248,251,255,1) 0%, rgba(228,239,255,1) 100%)',
-      }}
-    >
-      <Container
-        maxWidth="xl"
+    <>
+      {/* ── MAP SECTION ── */}
+      <Box
+        id="map-section"
+        ref={mapSectionRef}
         sx={{
-          px: { xs: 2, md: 3 },
-          pt: { xs: 2, md: 3 },
-          pb: { xs: 14, md: 18 },
+          width: '100%',
+          position: 'relative',
+          background: '#0A0A0A',
+          py: { xs: 6, md: 10 },
+          scrollMarginTop: '80px', // account for fixed navbar
         }}
       >
-        <Navbar
-          source={source}
-          destination={destination}
-          onSourceChange={setSource}
-          onDestinationChange={setDestination}
-          onSearch={handleSearch}
-          onSwap={handleSwap}
-          loading={loading}
-          statusMessage={statusMessage}
-          themeMode={themeMode}
-          onThemeModeChange={onThemeModeChange}
-        />
+        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
+          {/* Section header */}
+          <Box sx={{ mb: { xs: 3, md: 4 } }}>
+            <Typography sx={{ color: '#FF5500', fontSize: '0.7rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', mb: 1 }}>
+              Interactive Safety Map
+            </Typography>
+            <Typography sx={{ fontFamily: '"Bebas Neue", sans-serif', fontSize: { xs: '2rem', md: '3rem' }, color: '#fff', lineHeight: 1 }}>
+              Explore Bangalore Risk Zones
+            </Typography>
+          </Box>
 
-        <Grid container spacing={{ xs: 2.5, lg: 3 }}>
-          <Grid item xs={12} lg={8.5}>
-            <Paper
-              sx={{
-                p: { xs: 2, md: 2.5 },
-                borderRadius: 4,
-                mb: { xs: 2.5, lg: 0 },
-                ...glassPanel(theme, 0.86),
-              }}
-            >
-              <Stack spacing={2}>
-                <Stack
-                  direction={{ xs: 'column', md: 'row' }}
-                  justifyContent="space-between"
-                  spacing={1.5}
-                >
-                  <Box>
-                    <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-                      Interactive safety map
-                    </Typography>
-                    <Typography variant="h3" sx={{ fontSize: { xs: '1.2rem', md: '1.5rem' }, mt: 0.4 }}>
-                      Explore the corridor, then scroll for route intelligence.
-                    </Typography>
-                    <Typography variant="body2" sx={{ mt: 0.8, color: 'text.secondary', maxWidth: 760 }}>
-                      The map now lives inside its own section, while controls and route analysis sit below or alongside it.
-                      This keeps the demo readable on smaller screens and lets the user scroll naturally.
-                    </Typography>
-                  </Box>
+          {/* Search bar */}
+          <Paper sx={{ p: { xs: 2, md: 2.5 }, borderRadius: 4, mb: 3, ...glassPanel(theme, 0.86) }}>
+            <SearchInput
+              source={source}
+              destination={destination}
+              onSourceChange={setSource}
+              onDestinationChange={setDestination}
+              onSearch={handleSearch}
+              onSwap={handleSwap}
+              loading={loading}
+              statusMessage={statusMessage}
+            />
+          </Paper>
 
-                  <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="flex-start">
-                    <Chip icon={<MapRounded />} label={mapReady ? 'Map ready' : 'Loading map'} />
-                    <Chip icon={<ExploreRounded />} label={selectedRoute ? 'Route selected' : 'Browse routes'} />
-                    <Chip icon={<ShieldRounded />} label={heatmapVisible ? 'Heatmap on' : 'Heatmap off'} />
-                  </Stack>
-                </Stack>
-
-                <Box
-                  sx={{
-                    position: 'relative',
-                    height: { xs: '44vh', md: '50vh', xl: '56vh' },
-                    minHeight: { xs: 320, md: 420 },
-                    borderRadius: 4,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <MapCanvas ref={mapContainerRef} mapReady={mapReady} themeMode={themeMode} />
-                </Box>
-              </Stack>
-            </Paper>
-          </Grid>
-
-          <Grid item xs={12} lg={3.5}>
-            <Stack
-              spacing={2.5}
-              sx={{
-                position: { lg: 'sticky' },
-                top: { lg: 24 },
-              }}
-            >
-              <FloatingControls
-                heatmapVisible={heatmapVisible}
-                onHeatmapToggle={() => setHeatmapVisible((current) => !current)}
-                heatmapLoading={heatmapLoading}
-                networkMode={networkMode}
-                onNetworkToggle={handleNetworkToggle}
-                responseTime={responseTime}
-                routeCount={routes.length}
-                timeContext={timeContext}
-              />
-
+          <Grid container spacing={{ xs: 2.5, lg: 3 }}>
+            <Grid item xs={12} lg={mapExpanded ? 12 : 8.5}>
               <Paper
                 sx={{
-                  p: 2.25,
+                  p: { xs: 1.5, md: 2 },
                   borderRadius: 4,
-                  ...glassPanel(theme, 0.8),
+                  mb: { xs: 2.5, lg: 0 },
+                  ...glassPanel(theme, 0.86),
                 }}
               >
-                <Typography variant="overline" sx={{ color: 'text.secondary' }}>
-                  UX note
-                </Typography>
-                <Typography variant="subtitle1" sx={{ fontWeight: 700, mt: 0.6 }}>
-                  Scroll-first layout
-                </Typography>
-                <Typography variant="body2" sx={{ mt: 1, color: 'text.secondary' }}>
-                  Search, map, controls, and route cards now live in separate sections. Users can scan the experience top-to-bottom
-                  instead of fighting overlapping floating layers.
-                </Typography>
+                <Stack spacing={1.5}>
+                  <Stack direction="row" spacing={1} flexWrap="wrap" alignItems="center" justifyContent="space-between">
+                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                      <Chip
+                        size="small"
+                        label={mapReady ? 'Map Ready' : 'Loading...'}
+                        sx={{
+                          backgroundColor: mapReady ? alpha('#10B981', 0.15) : alpha('#F59E0B', 0.15),
+                          color: mapReady ? '#10B981' : '#F59E0B',
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                        }}
+                      />
+                      <Chip
+                        size="small"
+                        label={routes.length > 0 ? `${routes.length} Routes` : 'No Routes'}
+                        sx={{
+                          backgroundColor: routes.length > 0 ? alpha('#FF5500', 0.15) : alpha('#64748B', 0.15),
+                          color: routes.length > 0 ? '#FF5500' : '#666',
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                        }}
+                      />
+                      <Chip
+                        size="small"
+                        label={heatmapVisible ? 'Risk Zones On' : 'Risk Zones Off'}
+                        sx={{
+                          backgroundColor: heatmapVisible ? alpha('#EF4444', 0.15) : alpha('#64748B', 0.15),
+                          color: heatmapVisible ? '#EF4444' : '#666',
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                        }}
+                      />
+                    </Stack>
+
+                    {/* Selected route indicator */}
+                    {selectedRoute && (
+                      <Chip
+                        size="small"
+                        label={`Viewing: ${selectedRoute.label || `Route ${selectedRoute.route_id}`}`}
+                        sx={{
+                          backgroundColor: alpha('#FF5500', 0.15),
+                          color: '#FF5500',
+                          fontWeight: 700,
+                          fontSize: '0.7rem',
+                          border: `1px solid ${alpha('#FF5500', 0.3)}`,
+                        }}
+                      />
+                    )}
+                  </Stack>
+
+                  {/* Fix 1 — Map container with dynamic height */}
+                  <Box
+                    sx={{
+                      position: 'relative',
+                      height: mapExpanded
+                        ? { xs: '55vh', md: '65vh', xl: '70vh' }
+                        : { xs: '35vh', md: '45vh', xl: '50vh' },
+                      minHeight: mapExpanded ? { xs: 380, md: 450 } : { xs: 280, md: 350 },
+                      borderRadius: 4,
+                      overflow: 'hidden',
+                      transition: 'height 0.4s ease, min-height 0.4s ease',
+                    }}
+                  >
+                    <MapCanvas
+                      ref={mapContainerRef}
+                      mapReady={mapReady}
+                      fullscreen={mapFullscreen}
+                      onFullscreenToggle={handleFullscreenToggle}
+                    />
+                  </Box>
+                </Stack>
               </Paper>
-            </Stack>
-          </Grid>
+            </Grid>
 
-          <Grid item xs={12}>
-            <RouteDetailsPanel
-              routes={routes}
-              selectedRoute={selectedRoute}
-              onRouteSelect={handleRouteSelect}
-              timeContext={timeContext}
-              tradeOffNote={tradeOffNote}
-              loading={loading}
-            />
-          </Grid>
-        </Grid>
-      </Container>
+            {/* Controls sidebar — hide when map is expanded to give more room */}
+            {!mapExpanded && (
+              <Grid item xs={12} lg={3.5}>
+                <Stack
+                  spacing={2.5}
+                  sx={{
+                    position: { lg: 'sticky' },
+                    top: { lg: 88 },
+                  }}
+                >
+                  <FloatingControls
+                    heatmapVisible={heatmapVisible}
+                    onHeatmapToggle={() => setHeatmapVisible((current) => !current)}
+                    heatmapLoading={heatmapLoading}
+                    networkMode={networkMode}
+                    onNetworkToggle={handleNetworkToggle}
+                    responseTime={responseTime}
+                    routeCount={routes.length}
+                    timeContext={timeContext}
+                  />
 
+                  <Paper
+                    sx={{
+                      p: 2.25,
+                      borderRadius: 4,
+                      ...glassPanel(theme, 0.8),
+                    }}
+                  >
+                    <Typography variant="overline" sx={{ color: '#666' }}>
+                      Quick Tips
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ fontWeight: 700, mt: 0.6, color: '#fff' }}>
+                      Get Started
+                    </Typography>
+                    <Typography variant="body2" sx={{ mt: 1, color: '#999' }}>
+                      1. Enter source and destination
+                      <br />
+                      2. Click "Find Routes"
+                      <br />
+                      3. Toggle heatmap for risk zones
+                      <br />
+                      4. Select routes to compare
+                    </Typography>
+                  </Paper>
+                </Stack>
+              </Grid>
+            )}
+
+            {/* Show controls inline below map when expanded */}
+            {mapExpanded && (
+              <Grid item xs={12}>
+                <Paper
+                  sx={{
+                    p: { xs: 2, md: 2.5 },
+                    borderRadius: 4,
+                    ...glassPanel(theme, 0.86),
+                  }}
+                >
+                  <Stack direction={{ xs: 'column', md: 'row' }} spacing={3} alignItems={{ md: 'flex-start' }}>
+                    <Box sx={{ flex: 1 }}>
+                      <FloatingControls
+                        heatmapVisible={heatmapVisible}
+                        onHeatmapToggle={() => setHeatmapVisible((current) => !current)}
+                        heatmapLoading={heatmapLoading}
+                        networkMode={networkMode}
+                        onNetworkToggle={handleNetworkToggle}
+                        responseTime={responseTime}
+                        routeCount={routes.length}
+                        timeContext={timeContext}
+                      />
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="overline" sx={{ color: '#666' }}>
+                        Quick Tips
+                      </Typography>
+                      <Typography variant="subtitle1" sx={{ fontWeight: 700, mt: 0.6, color: '#fff' }}>
+                        Get Started
+                      </Typography>
+                      <Typography variant="body2" sx={{ mt: 1, color: '#999' }}>
+                        Click any route card below to highlight it on the map.
+                        Use the fullscreen button (top-right of map) for immersive view.
+                        Press ESC to exit fullscreen.
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+              </Grid>
+            )}
+          </Grid>
+        </Container>
+      </Box>
+
+      {/* ── ROUTES SECTION ── */}
+      <Box
+        id="routes-section"
+        sx={{
+          width: '100%',
+          background: '#0A0A0A',
+          pb: { xs: 6, md: 10 },
+        }}
+      >
+        <Container maxWidth="xl" sx={{ px: { xs: 2, md: 3 } }}>
+          <RouteDetailsPanel
+            routes={routes}
+            selectedRoute={selectedRoute}
+            onRouteSelect={handleRouteSelect}
+            timeContext={timeContext}
+            tradeOffNote={tradeOffNote}
+            loading={loading}
+          />
+        </Container>
+      </Box>
+
+      {/* ── SOS Button ── */}
       <Box
         sx={{
           position: 'fixed',
           right: { xs: 18, md: 28 },
           bottom: { xs: 22, md: 30 },
-          zIndex: 80,
+          zIndex: mapFullscreen ? 10000 : 80,
         }}
       >
         <SOSButton onTrigger={handleSOS} disabled={sosActive} />
       </Box>
-    </Box>
+    </>
   );
 }

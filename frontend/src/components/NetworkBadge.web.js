@@ -58,15 +58,12 @@ export default function NetworkBadge({ currentMode, onToggle, responseTime }) {
             textTransform: 'none',
             fontWeight: 700,
             color: theme.palette.text.secondary,
-            backgroundColor:
-              theme.palette.mode === 'dark'
-                ? alpha('#020817', 0.52)
-                : alpha('#FFFFFF', 0.82),
+            backgroundColor: alpha('#111111', 0.7),
           },
           '& .Mui-selected': {
             color: '#FFFFFF !important',
-            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 48%, #0F766E 100%) !important',
-            boxShadow: '0 14px 28px rgba(30, 58, 138, 0.22)',
+            background: 'linear-gradient(135deg, #CC4400 0%, #FF5500 48%, #FF7733 100%) !important',
+            boxShadow: '0 14px 28px rgba(255, 85, 0, 0.22)',
           },
         }}
       >
