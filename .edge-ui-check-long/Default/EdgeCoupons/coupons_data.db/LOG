@@ -1,0 +1,5 @@
+2026/04/12-01:26:10.060 29fc Creating DB D:\Hackathon\.edge-ui-check-long\Default\EdgeCoupons/coupons_data.db since it was missing.
+2026/04/12-01:26:10.079 29fc Reusing MANIFEST D:\Hackathon\.edge-ui-check-long\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/04/12-01:26:10.486 507c Level-0 table #5: started
+2026/04/12-01:26:10.490 507c Level-0 table #5: 682105 bytes OK
+2026/04/12-01:26:10.495 507c Delete type=0 #3

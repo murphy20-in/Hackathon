@@ -1,0 +1,6 @@
+2026/04/12-01:47:59.664 213c Reusing MANIFEST D:\Hackathon\.edge-scroll-check\Default\EdgeCoupons/coupons_data.db/MANIFEST-000001
+2026/04/12-01:47:59.666 213c Recovering log #4
+2026/04/12-01:47:59.667 213c Reusing old log D:\Hackathon\.edge-scroll-check\Default\EdgeCoupons/coupons_data.db/000004.log 
+2026/04/12-01:47:59.771 2bec Level-0 table #8: started
+2026/04/12-01:47:59.780 2bec Level-0 table #8: 682276 bytes OK
+2026/04/12-01:47:59.785 2bec Delete type=0 #4
